@@ -1,0 +1,22 @@
+<%- include('./partials/header') %>
+<%- include('./partials/navbar') %>
+
+<div class="row mt-5">
+
+    <% for(let item of foundLocation.sp){ %>
+
+        <div class="col-lg-4 product-card">
+            <div class="card text-center shadow mt-3 mx-auto" style="width: 18rem;">
+                <img src="<%=item.img%>" class="card-img-top img" alt="...">
+                <div class="card-body">
+                  <h3 class="card-title"> <%= item.name %> </h3>
+                  <a href="#" class="btn btn-primary">Park Here</a>
+                </div>
+            </div>
+        </div>
+        
+    <% } %>
+</div>
+
+
+<%- include('./partials/footer') %>

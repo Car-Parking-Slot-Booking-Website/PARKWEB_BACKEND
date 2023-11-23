@@ -1,0 +1,25 @@
+
+<%- include('./partials/header') %>
+<%- include('./partials/navbar') %>
+
+<div class="row">
+    <div class="row">
+        <div class="col-lg-6 product-card mt-5">
+                <div class="card shadow mt-3 mx-auto" style="width: 22rem;">
+                    <img class="img" src="<%=foundSP.img%>" class="card-img-top" alt="...">
+                    <div class="card-body">
+                      <h3 class="card-title text-center"> <%= foundSP.name %> </h3>
+                      <!-- <a href="/products/<%=foundSP._id%>/edit" class="btn btn-info">Edit</a> -->
+                      <form class="d-inline-block" action="/cities/<%=foundSP._id%>?_method=DELETE" method="POST">
+                          <button class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+
+                    </div>
+                </div>
+        </div>
+
+    
+
+</div>
+
+<%- include('./partials/footer') %>

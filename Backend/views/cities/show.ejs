@@ -1,0 +1,58 @@
+
+<%- include('./partials/header') %>
+<%- include('./partials/navbar') %>
+
+<div class="row">
+    <div class="row">
+        <div class="col-lg-6 product-card mt-5">
+                <div class="card shadow mt-3 mx-auto" style="width: 22rem;">
+                    <img class="img" src="<%=foundCity.img%>" class="card-img-top" alt="...">
+                    <div class="card-body">
+                      <h3 class="card-title text-center"> <%= foundCity.name %> </h3>
+                      <!-- <a href="/products/<%=foundCity._id%>/edit" class="btn btn-info">Edit</a> -->
+                      <form class="d-inline-block" action="/admin/city/<%=foundCity._id%>?_Method=DELETE" method="POST">
+                          <button class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+
+                    </div>
+                </div>
+        </div>
+
+    <div class="col-lg-6">
+        <div class="col-lg-4 mt-5">
+            <h2 class="display-5">Add Location</h2>
+            <form action="/cities/<%= foundCity._id %>/location" method="POST">
+                
+                <div class="mb-3">
+                    <label class="form-label" for="name">Location Name: </label>
+                    <textarea class="form-control" name="name" id="comment" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="img">Image URL: </label>
+                    <textarea class="form-control" name="img" id="comment" rows="3"></textarea>
+                </div>
+                <button class="btn btn-sm btn-success">Submit</button>
+            </form>
+            <div class = "my-3">
+                <h3>Locations Added</h3>
+                <% for(let item of foundCity.locations){ %>
+
+                    <div class="col-lg-4 product-card">
+                        <div class="card text-center shadow mt-3 mx-auto" style="width: 18rem;">
+                            <img src="<%=item.img%>" class="card-img-top img" alt="...">
+                            <div class="card-body">
+                            <h3 class="card-title"> <%= item.name %> </h3>
+                            <a href="/admin/locations/<%= item._id %>" class="btn btn-primary">View Info</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                <% } %>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<%- include('./partials/footer') %>
