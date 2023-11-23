@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Endpoint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Webhook Endpoint</h1>
+
+    <div id="webhook-content">
+        <p>Waiting for webhook events...</p>
+    </div>
+
+    <script>
+        // Parse the URL to get query parameters
+        const params = new URLSearchParams(window.location.search);
+
+        // Display event data if available
+        if (params.has('event')) {
+            const eventName = params.get('event');
+            const eventData = params.has('data') ? JSON.parse(decodeURIComponent(params.get('data'))) : {};
+
+            const webhookContent = document.getElementById('webhook-content');
+            webhookContent.innerHTML = `
+                <p>Received webhook event: <strong>${eventName}</strong></p>
+                <pre>${JSON.stringify(eventData, null, 2)}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>
