@@ -1,0 +1,53 @@
+<!-- input.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Add your existing meta tags and styles -->
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Book a Parking Slot</h1>
+        <form id="bookingForm" action="/storeStartTime" method="post">
+            <label for="startTime">Enter starting time (0-23):</label>
+            <input type="number" id="startTime" name="startTime" required min="0" max="23">
+            
+            <!-- Use a regular button to trigger the redirect -->
+            <button type="button" id="bookButton">Book Slot</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('bookButton').addEventListener('click', redirectToStartPayment);
+
+function redirectToStartPayment() {
+    const startTimeString = document.getElementById('startTime').value;
+    const startTime = parseInt(startTimeString, 10);
+
+    if (isNaN(startTime) || startTime < 0 || startTime > 23) {
+        alert('Invalid start time. Please enter a valid hour (0-23).');
+        return;
+    }
+
+    // Use fetch to send user input to /storeStartTime
+    fetch('/storeStartTime', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ startTime: startTime }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Start time stored on the server:', data.startTime);
+
+        // Redirect to the correct route: /start-payment using window.location.pathname
+        window.location.pathname = '/start-payment';
+    })
+    .catch(error => {
+        console.error('Error storing start time on the server:', error);
+        alert('Error storing start time. Please try again.');
+    });
+}
+    </script>
+</body>
+</html>
