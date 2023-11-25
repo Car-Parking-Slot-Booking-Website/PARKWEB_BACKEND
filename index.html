@@ -1,54 +1,110 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book a Parking Slot</title>
-    <!-- Add your existing meta tags and styles -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Form</title>
+  <!-- Include Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    /* Add your styles here */
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Book a Parking Slot</h1>
-        <form id="bookingForm">
-            <label for="startTime">Enter starting time (0-23):</label>
-            <input type="number" id="startTime" name="startTime" required min="0" max="23">
-            <button type="button" id="bookButton">Book Slot</button>
-        </form>
+  <h1>Payment Form</h1>
+  <!-- Display errors to the user -->
+  <div id="error-message" role="alert"></div>
+  
+  <!-- Payment form -->
+  <form id="payment-form">
+    <!-- Card details -->
+    <label for="card-element">
+      Credit or debit card
+    </label>
+    <div id="card-element">
+      <!-- A Stripe Element will be inserted here. -->
     </div>
 
-    <script>
-        document.getElementById('bookButton').addEventListener('click', redirectToStartPayment);
+    <!-- Used to display form errors. -->
+    <div id="card-errors" role="alert"></div>
 
-function redirectToStartPayment() {
-    const startTimeString = document.getElementById('startTime').value;
-    const startTime = parseInt(startTimeString, 10);
+    <!-- Submit button -->
+    <button type="submit">Pay Now</button>
+  </form>
 
-    if (isNaN(startTime) || startTime < 0 || startTime > 23) {
-        alert('Invalid start time. Please enter a valid hour (0-23).');
-        return;
-    }
+  <script>
+    // Your publishable key
+    var stripe = Stripe('pk_test_51OBLsJSJtevqEtP9AefCdHhDprDOFUVoDj75dTryPttuw9OwAMYzgRPMlQeoJdxY7i3gYJb6RJrDIBBMKmdKzkmD00BNUn8GGm');
 
-    // Use fetch to send user input to /storeStartTime
-    fetch('/storeStartTime', {
+    // Create an instance of Elements
+    var elements = stripe.elements();
+
+    // Create a card Element and mount it to the card-element div
+    var card = elements.create('card');
+    card.mount('#card-element');
+
+    // Handle real-time validation errors from the card Element
+    card.addEventListener('change', function(event) {
+      var displayError = document.getElementById('card-errors');
+      if (event.error) {
+        displayError.textContent = event.error.message;
+      } else {
+        displayError.textContent = '';
+      }
+    });
+
+    // Handle form submission
+    var form = document.getElementById('payment-form');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      // Disable the submit button to prevent multiple submissions
+      form.querySelector('button').disabled = true;
+
+      // Create a PaymentMethod with the card Element
+      stripe.createPaymentMethod({
+        type: 'card',
+        card: card,
+      }).then(function(result) {
+        if (result.error) {
+          // Show error to your customer
+          showError(result.error.message);
+        } else {
+          // Send the PaymentMethod ID to your server
+          handlePaymentMethod(result.paymentMethod);
+        }
+      });
+    });
+
+    // Handle PaymentMethod and confirm the payment on the server
+    function handlePaymentMethod(paymentMethod) {
+      // Send the PaymentMethod ID to your server
+      fetch('/create-payment-intent', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ startTime: startTime }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Start time stored on the server:', data.startTime);
+        body: JSON.stringify({
+          payment_method: paymentMethod.id,
+        }),
+      }).then(function(response) {
+        return response.json();
+      }).then(function(result) {
+        if (result.error) {
+          // Show error to your customer
+          showError(result.error);
+        } else {
+          // The payment has been processed!
+          alert('Payment successful!');
+        }
+      });
+    }
 
-        // Redirect to the correct route: /start-payment using window.location.pathname
-        window.location.pathname = '/start-payment';
-    })
-    .catch(error => {
-        console.error('Error storing start time on the server:', error);
-        alert('Error storing start time. Please try again.');
-    });
-}
-    </script>
+    // Show error to your customer
+    function showError(errorMessage) {
+      var errorElement = document.getElementById('error-message');
+      errorElement.textContent = errorMessage;
+    }
+  </script>
 </body>
 </html>

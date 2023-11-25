@@ -27,9 +27,11 @@ const parkingSlotSchema = new mongoose.Schema({
             hour: Number,
             isAvail: Boolean,
             paymentIntentId: String,
-            booked: Boolean,
         },
     ],
+    SlotNumber: {
+        type: Number,
+    },
 });
 
 const ParkingSlot = mongoose.model('ParkingSlot', parkingSlotSchema);
@@ -38,70 +40,94 @@ app.use(bodyParser.json());
 app.use(cors());
 
 let storedStartTime;
+let bookedSlotNumber; // Added to store booked slot number
+
 app.get('/favicon.ico', (req, res) => res.status(204));
-// Handle POST request to store start time
-app.post('/storeStartTime', (req, res) => {
-    const startTime = req.body.startTime;
-    console.log('start time recieved in storeStartTime route :',storedStartTime)
-    if (isNaN(startTime) || startTime < 0 || startTime > 23) {
-        return res.status(400).json({ error: 'Invalid start time. Please enter a valid hour (0-23).' });
-    }
 
-    storedStartTime = startTime;
-    console.log('Start time stored on the server:', storedStartTime);
-
-    // Respond with a success message or any other data you want to send back
-    res.json({ startTime: storedStartTime });
-});
-
-app.post('/start-payment', async (req, res) => {
+app.post('/checkSlotAvailability', async (req, res) => {
     try {
-        // Use the stored start time from the /storeStartTime endpoint
-        const startTime = storedStartTime;
-        console.log('start time recieved in start-payment route :',startTime)           //this console statement is not getting printed
-        if (isNaN(startTime) || startTime < 0 || startTime > 23) {
-            return res.status(400).json({ error: 'Invalid start time. Please enter a valid hour (0-23).' });
-        }
+        const startTime = req.body.startTime;
 
-        const availableSlot = await ParkingSlot.findOne({
-            'availability.hour': startTime,
-            'availability.isAvail': true,
-            'availability.booked': false,
+        const availableSlots = await ParkingSlot.find({
+            'availability': {
+                $elemMatch: {
+                    'isAvail': true,
+                    'hour': startTime
+                }
+            }
         });
 
-        if (!availableSlot) {
-            console.error(`No available parking slot found for hour ${startTime}`);
-            return res.status(404).json({ error: `No Available Parking Slot for hour ${startTime}` });
-        }
-
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: 3000,
-            currency: 'inr',
-        });
-
-        const updatedSlot = await ParkingSlot.findOneAndUpdate(
-            {
-                'availability.hour': startTime,
-                'availability.isAvail': true,
-            },
-            {
-                $set: {
-                    'availability.$.isAvail': false,
-                    'availability.$.paymentIntentId': paymentIntent.id,
-                },
-            },
-            { new: true }
-        );
-
-        console.log('Parking slot updated successfully:', updatedSlot);
-        res.status(200).json({ message: 'Slot booked successfully' });
+        res.json({ slotAvailable: availableSlots.length > 0 });
     } catch (error) {
-        console.error('Error creating PaymentIntent or updating slot:', error);
+        console.error('Error checking slot availability:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-// Your existing code for handling the webhook
+app.post('/storeStartTime', async (req, res) => {
+    try {
+        const startTime = req.body.startTime;
+
+        if (isNaN(startTime) || startTime < 0 || startTime > 23) {
+            return res.status(400).json({ error: 'Invalid start time. Please enter a valid hour (0-23).' });
+        }
+
+        const availableSlots = await ParkingSlot.find({
+            'availability': {
+                $elemMatch: {
+                    'isAvail': true,
+                    'hour': startTime
+                }
+            }
+        });
+
+        if (availableSlots.length > 0) {
+            storedStartTime = startTime;
+            console.log('Start time stored on the server:', storedStartTime);
+            res.json({ startTime: storedStartTime });
+        } else {
+            res.status(404).json({ error: `No Available Parking Slot for hour ${startTime}` });
+        }
+    } catch (error) {
+        console.error('Error storing start time:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/start-payment', async (req, res) => {
+    try {
+        const startTime = storedStartTime;
+
+        if (isNaN(startTime) || startTime < 0 || startTime > 23) {
+            return res.status(400).json({ error: 'Invalid start time. Please enter a valid hour (0-23).' });
+        }
+
+        const availableSlots = await ParkingSlot.find({
+            'availability': {
+                $elemMatch: {
+                    'isAvail': true,
+                    'hour': startTime
+                }
+            }
+        });
+
+        if (availableSlots.length === 0) {
+            console.error(`No available parking slot found for hour ${startTime}`);
+            return res.status(404).json({ error: `No Available Parking Slot for hour ${startTime}` });
+        }
+
+        // Proceed to payment logic
+        // ... (remaining code for payment logic)
+    } catch (error) {
+        console.error('Error starting payment:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ... (other imports and configurations)
+
+// ... (other imports and configurations)
+
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
     try {
         const event = req.body;
@@ -113,12 +139,12 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
                 const paymentIntent = event.data.object;
 
                 const startTime = storedStartTime;
-                console.log(typeof(startTime));
-                console.log('Start time received in webhook:', startTime);
+
                 if (isNaN(startTime) || startTime < 0 || startTime > 23) {
                     return res.status(400).json({ error: 'Invalid start time received in webhook.' });
                 }
-                
+
+                // Find the first available slot for the specified start time
                 const availableSlot = await ParkingSlot.findOneAndUpdate(
                     {
                         'availability': {
@@ -142,8 +168,16 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
                     return res.status(404).json({ error: `No Available Parking Slot for hour ${startTime}` });
                 }
 
+                // Update the booked slot number globally
+                bookedSlotNumber = availableSlot.SlotNumber;
+
                 console.log('Parking slot updated successfully:', availableSlot);
-                res.status(200).json({ message: 'Slot booked successfully' });
+
+                // Include SlotNumber in the response
+                res.status(200).json({
+                    message: `Slot ${bookedSlotNumber} booked successfully`,
+                    slotNumber: bookedSlotNumber
+                });
                 break;
 
             default:
@@ -156,6 +190,30 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
     }
 });
 
+
+// ... (other routes and configurations)
+
+
+// ... (other routes and configurations)
+
+app.get('/fetch-slot', async (req, res) => {
+    try {
+        // Use the globally stored booked slot number
+        const slotNumber = bookedSlotNumber;
+
+        if (!slotNumber) {
+            return res.status(400).json({ error: 'No slot number available. Please book a slot first.' });
+        }
+
+        // Send the slot information in the response
+        res.status(200).json({ slotNumber: slotNumber });
+    } catch (error) {
+        console.error('Error fetching slot information:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ... (other routes and configurations)
 
 app.get('/input.html', (req, res) => {
     res.sendFile(__dirname + '/input.html');

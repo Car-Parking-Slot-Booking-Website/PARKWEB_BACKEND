@@ -21,8 +21,16 @@ db.once('open', async () => {
                 isAvail: true,
                 paymentIntentId: '',
             })),
-            booked: false,
+            SlotNumber:1
         },
+        {
+            availability: Array.from({ length: 24 }, (_, hour) => ({
+                hour,
+                isAvail: true,
+                paymentIntentId: '',
+            })),
+            SlotNumber:2
+        }
     ];
 
     try {

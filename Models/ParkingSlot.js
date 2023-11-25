@@ -10,7 +10,10 @@ let parkingSlotSchema = new mongoose.Schema({
             paymentIntentId: String
         }
         
-    ]
+    ],
+    SlotNumber:{
+        type:Number
+    }
 });
 
 
