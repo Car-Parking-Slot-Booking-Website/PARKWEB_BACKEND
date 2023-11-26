@@ -1,0 +1,51 @@
+<!-- start-payment.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Add your existing meta tags and styles -->
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Start Payment</h1>
+
+        <!-- Add a div to display the availability information -->
+        <div id="availabilityText"></div>
+        
+        <!-- Add a button to proceed to the Stripe server -->
+        <a href="https://book.stripe.com/test_4gw9E44287Cr4akdQQ" target="_blank">Proceed to Stripe</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                // Use fetch to get the count of available slots directly
+                const response = await fetch('/getAvailableSlotCount', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+                
+                if (!response.ok) {
+                    console.error('Error getting available slot count. Status:', response.status);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data && data.slotCount !== undefined) {
+                    const count = data.slotCount;
+
+                    const availabilityText = document.getElementById('availabilityText');
+                    availabilityText.textContent = `Number of available slots: ${count}`;
+                } else {
+                    console.error('Invalid response from server:', data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

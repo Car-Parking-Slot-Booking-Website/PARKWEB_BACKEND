@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Form</title>
+  <!-- Include Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    /* Add your styles here */
+  </style>
+</head>
+<body>
+  <h1>Payment Form</h1>
+  <!-- Display errors to the user -->
+  <div id="error-message" role="alert"></div>
+  
+  <!-- Payment form -->
+  <form id="payment-form">
+    <!-- Card details -->
+    <label for="card-element">
+      Credit or debit card
+    </label>
+    <div id="card-element">
+      <!-- A Stripe Element will be inserted here. -->
+    </div>
+
+    <!-- Used to display form errors. -->
+    <div id="card-errors" role="alert"></div>
+
+    <!-- Submit button -->
+    <button type="submit">Pay Now</button>
+  </form>
+
+  <script>
+    // Your publishable key
+    var stripe = Stripe('pk_test_51OBLsJSJtevqEtP9AefCdHhDprDOFUVoDj75dTryPttuw9OwAMYzgRPMlQeoJdxY7i3gYJb6RJrDIBBMKmdKzkmD00BNUn8GGm');
+
+    // Create an instance of Elements
+    var elements = stripe.elements();
+
+    // Create a card Element and mount it to the card-element div
+    var card = elements.create('card');
+    card.mount('#card-element');
+
+    // Handle real-time validation errors from the card Element
+    card.addEventListener('change', function(event) {
+      var displayError = document.getElementById('card-errors');
+      if (event.error) {
+        displayError.textContent = event.error.message;
+      } else {
+        displayError.textContent = '';
+      }
+    });
+
+    // Handle form submission
+    var form = document.getElementById('payment-form');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      // Disable the submit button to prevent multiple submissions
+      form.querySelector('button').disabled = true;
+
+      // Create a PaymentMethod with the card Element
+      stripe.createPaymentMethod({
+        type: 'card',
+        card: card,
+      }).then(function(result) {
+        if (result.error) {
+          // Show error to your customer
+          showError(result.error.message);
+        } else {
+          // Send the PaymentMethod ID to your server
+          handlePaymentMethod(result.paymentMethod);
+        }
+      });
+    });
+
+    // Handle PaymentMethod and confirm the payment on the server
+    function handlePaymentMethod(paymentMethod) {
+      // Send the PaymentMethod ID to your server
+      fetch('/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payment_method: paymentMethod.id,
+        }),
+      }).then(function(response) {
+        return response.json();
+      }).then(function(result) {
+        if (result.error) {
+          // Show error to your customer
+          showError(result.error);
+        } else {
+          // The payment has been processed!
+          alert('Payment successful!');
+        }
+      });
+    }
+
+    // Show error to your customer
+    function showError(errorMessage) {
+      var errorElement = document.getElementById('error-message');
+      errorElement.textContent = errorMessage;
+    }
+  </script>
+</body>
+</html>
