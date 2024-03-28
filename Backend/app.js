@@ -15,7 +15,7 @@ app.use(CityRoutes); // vvv imp
 app.use(LocationRoutes); // vvv imp
 app.use(SPRoutes); // vvv imp
 
-mongoose.connect('mongodb://127.0.0.1:27017/Parking')
+mongoose.connect('mongodb+srv://kush:kushparking@parking.rlrwlky.mongodb.net/?retryWrites=true&w=majority&appName=parking')
 .then(() => { console.log("DB CONNECTED") })
 .catch((err)=>{console.log("error while connecting DB",err)})
 
